@@ -10,7 +10,6 @@
 
 **开源的AI驱动18+文字冒险游戏**
 
-[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
 [![Grok](https://img.shields.io/badge/Powered_by-Grok_3-000000?style=for-the-badge&logo=xai&logoColor=white)](https://x.ai/)
 [![Adult](https://img.shields.io/badge/18+-Adult_Content-FF2442?style=for-the-badge)](README.md)

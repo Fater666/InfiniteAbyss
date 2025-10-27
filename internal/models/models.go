@@ -44,16 +44,17 @@ type Item struct {
 
 // World 世界概要
 type World struct {
-	ID          string     `json:"id"`
-	SegmentText string     `json:"segment_text"` // 原始输入文本
-	Name        string     `json:"name"`
-	Description string     `json:"description"`
-	Genre       string     `json:"genre"`      // 类型：horror, fantasy, urban, etc.
-	Difficulty  int        `json:"difficulty"` // 1-10
-	Goals       []string   `json:"goals"`      // 本世界的通关目标
-	NPCs        []NPC      `json:"npcs"`       // 关键NPC
-	PlotLines   []PlotNode `json:"plot_lines"` // 剧情时间线
-	CreatedAt   time.Time  `json:"created_at"`
+	ID              string     `json:"id"`
+	SegmentText     string     `json:"segment_text"`     // 原始输入文本
+	OriginalSummary string     `json:"original_summary"` // 原小说摘要（1000字内）
+	Name            string     `json:"name"`
+	Description     string     `json:"description"`
+	Genre           string     `json:"genre"`      // 类型：horror, fantasy, urban, etc.
+	Difficulty      int        `json:"difficulty"` // 1-10
+	Goals           []string   `json:"goals"`      // 本世界的通关目标
+	NPCs            []NPC      `json:"npcs"`       // 关键NPC
+	PlotLines       []PlotNode `json:"plot_lines"` // 剧情时间线
+	CreatedAt       time.Time  `json:"created_at"`
 }
 
 // PlotNode 剧情节点

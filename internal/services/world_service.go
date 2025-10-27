@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/aiwuxian/project-abyss/internal/models"
@@ -33,6 +34,17 @@ func (ws *WorldService) CreateWorldFromSegment(ctx context.Context, segmentText 
 	world, err := ws.llm.ParseSegment(ctx, segmentText)
 	if err != nil {
 		return nil, fmt.Errorf("解析段落失败: %w", err)
+	}
+
+	// 生成原小说摘要（1000字内）
+	if segmentText != "" {
+		summary, err := ws.llm.GenerateOriginalSummary(ctx, segmentText)
+		if err != nil {
+			// 如果生成摘要失败，记录错误但不影响主流程
+			log.Printf("⚠️ 生成原小说摘要失败: %v\n", err)
+		} else {
+			world.OriginalSummary = summary
+		}
 	}
 
 	// 生成ID和时间戳

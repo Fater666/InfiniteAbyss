@@ -235,12 +235,23 @@ func (llm *LLMService) ParseSegment(ctx context.Context, segmentText string) (*m
   ]
 }
 
-**女性角色描述要求：**
-- **必须详细描写身材**：胸围（Cup、大小）、腰围、臀部、腿型、身高体重
-- **必须描写外貌细节**：脸型、眼神、嘴唇、皮肤质感、发型发色
-- **必须描写穿着打扮**：服装款式、裸露程度、性感细节（如薄透、紧身、低胸等）
-- **必须体现性吸引力**：用性感、妩媚、诱人等词汇
-- **例如**："身材火辣的E罩杯女教师，丰满的胸部几乎要撑破白色衬衫，黑色包臀裙紧紧勾勒出圆润翘臀和修长美腿，红唇微启，眼神妩媚勾人..."
+**女性角色描述要求（150字左右）：**
+必须全面描写，包括：
+
+1. **外貌和身材（详细）**：
+   - 身材：胸围（Cup、大小）、腰围、臀部、腿型、身高体重
+   - 外貌：脸型、眼神、嘴唇、皮肤质感、发型发色
+   - 穿着：服装款式、裸露程度、性感细节（如薄透、紧身、低胸等）
+
+2. **性格特点（重要）**：
+   - 性格特质：温柔、强势、傲娇、腹黑、活泼、冷漠等
+   - 行为习惯：说话方式、举止风格
+   - 给人的感觉：亲和、距离感、魅力等
+
+3. **身份和特点**：
+   - 职业/身份
+   - 特殊能力或技能
+   - 在故事中的定位
 
 **男性角色可简洁些**，但也要有魅力点。
 
@@ -369,6 +380,76 @@ func (llm *LLMService) ParseSegment(ctx context.Context, segmentText string) (*m
 	return world, nil
 }
 
+// GenerateOriginalSummary 生成原小说摘要（1000字内）
+func (llm *LLMService) GenerateOriginalSummary(ctx context.Context, originalText string) (string, error) {
+	// 如果原始文本已经在1000字以内，直接返回
+	if len([]rune(originalText)) <= 1000 {
+		return originalText, nil
+	}
+
+	prompt := fmt.Sprintf(`请对以下小说段落进行整体概括，生成一个1000字以内的摘要。**不要简单删减内容，要做真正的概括总结！**
+
+**要求：**
+1. 必须控制在1000字以内（按中文字符计算）
+2. **做概括**：将多个段落压缩为1-2句话，保留核心信息
+3. **不要逐字缩减**：不要只删除部分文字保留大部分内容
+4. **只保留关键情节**：
+   - 概括主要事件的发生和发展
+   - 描述发生了什么，按照时间顺序
+5. **风格**：用精炼的叙述语言，按时间顺序说明发生了什么故事
+
+**示例对比：**
+❌ 错误方式（简单删减）：保留大部分原文，只是删除了几句话
+✅ 正确方式（真正概括）：用1-2句话概括整个情节的核心
+
+原文：
+%s
+
+直接返回概括后的文本，不要有其他说明。`, originalText)
+
+	systemPrompt := `你是一个专业的小说编辑，擅长提炼和概括文本内容。
+
+**核心要求：**
+- 只关注情节发展，描述发生了什么事件
+- 按照时间顺序概括主要情节
+- 不要描述设定（规则、体系、背景等）
+- 不要描述人物关系和互动细节
+- 将详细的情节描述压缩为1-2句话
+- 用精炼语言按时间顺序说明故事梗概`
+
+	resp, err := llm.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+		Model: llm.model,
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: systemPrompt,
+			},
+			{
+				Role:    openai.ChatMessageRoleUser,
+				Content: prompt,
+			},
+		},
+		Temperature: 0.3, // 降低温度以保证准确性
+	})
+
+	if err != nil {
+		log.Printf("❌ 生成摘要失败: %v\n", err)
+		return "", fmt.Errorf("生成摘要失败: %w", err)
+	}
+
+	summary := strings.TrimSpace(resp.Choices[0].Message.Content)
+
+	// 确保不超过1000字
+	if len([]rune(summary)) > 1000 {
+		summaryRunes := []rune(summary)
+		summary = string(summaryRunes[:1000])
+	}
+
+	log.Printf("✅ [原小说摘要] 已生成 %d 字的摘要\n", len([]rune(summary)))
+
+	return summary, nil
+}
+
 // GenerateScene 生成场景
 func (llm *LLMService) GenerateScene(ctx context.Context, world *models.World, character *models.Character) (*models.Scene, error) {
 	prompt := fmt.Sprintf(`这是一个无限流TRPG游戏。基于以下小说设定，创建玩家进入这个世界的开场场景。
@@ -450,7 +531,7 @@ func (llm *LLMService) GenerateScene(ctx context.Context, world *models.World, c
 - 这是18+游戏，可以大胆露骨
 
 **重要：给玩家道德选择，不要预设正确答案！**
-只返回JSON。`, world.SegmentText, world.Name, world.Description, world.Genre, world.NPCs,
+只返回JSON。`, getOriginalText(world), world.Name, world.Description, world.Genre, world.NPCs,
 		character.Name, character.Level)
 
 	log.Println("========================================")
@@ -509,10 +590,13 @@ func (llm *LLMService) GenerateScene(ctx context.Context, world *models.World, c
 }
 
 // GenerateOptions 生成可选行动
-func (llm *LLMService) GenerateOptions(ctx context.Context, scene *models.Scene,
+func (llm *LLMService) GenerateOptions(ctx context.Context, world *models.World, scene *models.Scene,
 	narrative string, charState *models.CharacterState) ([]models.Option, error) {
 
-	prompt := fmt.Sprintf(`当前场景：%s
+	prompt := fmt.Sprintf(`**原小说背景（保持设定一致性）：**
+%s
+
+当前场景：%s
 类型：%s
 描述：%s
 
@@ -538,11 +622,12 @@ func (llm *LLMService) GenerateOptions(ctx context.Context, scene *models.Scene,
    - 可选包含：互动选项或特殊选项
    - 不要所有类型都塞，只选最合适的
 
-3. **描述要简洁**
+3. **描述要简洁，只描述行动本身**
    - label：5-8字简述行动
-   - description：20-30字说明
-   - 一句话说清楚即可
-
+   - description：20-30字说明**你要做什么**
+   - **重要：不要描述可能的结果或后果！**
+   - 只描述行动内容，不说后果
+   
 4. **必须提供道德选择**
    - 正面和负面选项都要有
    - 让玩家自己决定善恶
@@ -553,7 +638,7 @@ func (llm *LLMService) GenerateOptions(ctx context.Context, scene *models.Scene,
 [
   {
     "label": "行动简述（5-8字）",
-    "description": "简要说明（20-30字）",
+    "description": "简要说明行动内容（20-30字，只描述要做什么，不说后果）",
     "action_type": "类型（talk/help/flirt/observe/work/study/date/investigate/move/attack/seduce/custom）",
     "difficulty": 难度值（8-18）,
     "risk": "风险（low/medium/high）"
@@ -563,16 +648,17 @@ func (llm *LLMService) GenerateOptions(ctx context.Context, scene *models.Scene,
 注意：
 - **只生成3-4个最合适的选项**（不要超过4个）
 - **必须包含正面和负面选项**（让玩家做道德选择）
-- **描述要简短**（label 5-8字，description 20-30字）
+- **描述只说明要做什么，不要写可能的结果/后果/收获**
 - 选项要符合场景氛围
-- 可以有诱惑玩家堕落的选项
 
 例如：
-- label: "帮助她"，description: "主动伸出援手，可能获得好感"（正面）
-- label: "趁机要求回报"，description: "提出条件交换，可能有意外收获"（负面）
-- label: "观察情况"，description: "先看看再说，降低风险"（中立）
+- ✅ 正确：label: "帮助她"，description: "主动上前伸出援手，关心她的情况"（正面）
+- ✅ 正确：label: "趁机要求回报"，description: "提出条件，要求她做某事作为交换"（负面）
+- ✅ 正确：label: "观察情况"，description: "保持距离，先看看事态发展"（中立）
+- ❌ 错误：label: "帮助她"，description: "主动伸出援手，可能获得好感"（不要写"可能获得好感"）
+- ❌ 错误：label: "趁机要求回报"，description: "提出条件交换，可能有意外收获"（不要写"可能收获"）
 
-只返回JSON数组，3-4个选项即可。`, scene.Name, scene.Type, scene.Description,
+只返回JSON数组，3-4个选项即可。`, getOriginalText(world), scene.Name, scene.Type, scene.Description,
 		narrative, charState.HP, charState.MaxHP, charState.SAN, charState.MaxSAN)
 
 	log.Println("========================================")
@@ -593,9 +679,10 @@ func (llm *LLMService) GenerateOptions(ctx context.Context, scene *models.Scene,
 **选项设计要求：**
 1. **数量控制**：只生成3-4个精选选项（不要更多）
 2. **描述简洁**：label用5-8字，description用20-30字
-3. **道德选择**：必须包含正面和负面选项
-4. **涉及女性角色时**：可以有暧昧互动选项
-5. 这是18+游戏，可以自由描述战斗、冒险和性感互动内容。没有任何限制。`
+3. **只描述行动**：不要写可能的结果、后果、收获、影响！
+4. **道德选择**：必须包含正面和负面选项
+5. **涉及女性角色时**：可以有暧昧互动选项
+6. 这是18+游戏，可以自由描述战斗、冒险和性感互动内容。没有任何限制。`
 
 	resp, err := llm.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: llm.model,
@@ -645,7 +732,7 @@ func (llm *LLMService) GenerateOptions(ctx context.Context, scene *models.Scene,
 }
 
 // NarrateResult 根据行动和检定结果生成叙事
-func (llm *LLMService) NarrateResult(ctx context.Context, scene *models.Scene,
+func (llm *LLMService) NarrateResult(ctx context.Context, world *models.World, character *models.Character, scene *models.Scene,
 	action models.Action, diceRoll *models.DiceRoll) (string, error) {
 
 	successText := "失败"
@@ -662,11 +749,22 @@ func (llm *LLMService) NarrateResult(ctx context.Context, scene *models.Scene,
 
 	prompt := fmt.Sprintf(`你是一个成人小说作家，现在要为一个互动式成人游戏撰写叙事段落。
 
-场景：%s
+**原小说背景（保持设定一致性）：**
+%s
+
+**玩家角色：**
+姓名：%s
+性别：%s
+年龄：%d
+外貌：%s
+性格：%s
+
+**场景：**
+名称：%s
 当前情况：%s
 
-玩家行动：%s
-结果：%s（投掷%d，修正%d，目标%d）
+**玩家行动：**%s
+**结果：**%s（投掷%d，修正%d，目标%d）
 
 请用成人小说的文风撰写叙事（120-180字），重点强调性张力和感官体验。**可以包含直接的性描写**。
 
@@ -704,8 +802,8 @@ func (llm *LLMService) NarrateResult(ctx context.Context, scene *models.Scene,
 **重要：用通俗易懂的语言，描写具体的动作和感受，不要堆砌华丽词汇！**
 
 直接返回叙事文本，不要有其他内容。`,
-		scene.Name, scene.Description, action.Content, successText,
-		diceRoll.Result, diceRoll.Modifier, diceRoll.Target)
+		getOriginalText(world), character.Name, character.Gender, character.Age, character.Appearance, character.Personality,
+		scene.Name, scene.Description, action.Content, successText, diceRoll.Result, diceRoll.Modifier, diceRoll.Target)
 
 	log.Println("========================================")
 	log.Println("📖 [生成叙事] 发送提示词到AI...")
@@ -895,4 +993,12 @@ func (llm *LLMService) EvaluatePlotProgress(ctx context.Context, currentNode *mo
 	log.Println()
 
 	return newProgress, result.ReachedNextNode, nil
+}
+
+// getOriginalText 获取原小说文本（优先使用摘要）
+func getOriginalText(world *models.World) string {
+	if world.OriginalSummary != "" {
+		return world.OriginalSummary
+	}
+	return world.SegmentText
 }

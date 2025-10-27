@@ -58,6 +58,7 @@ func (s *Storage) initSchema() error {
 	CREATE TABLE IF NOT EXISTS worlds (
 		id TEXT PRIMARY KEY,
 		segment_text TEXT NOT NULL,
+		original_summary TEXT,
 		name TEXT NOT NULL,
 		description TEXT,
 		genre TEXT,
@@ -230,9 +231,9 @@ func (s *Storage) CreateWorld(world *models.World) error {
 	plotLinesJSON, _ := json.Marshal(world.PlotLines)
 
 	_, err := s.db.Exec(`
-		INSERT INTO worlds (id, segment_text, name, description, genre, difficulty, goals, npcs, plot_lines, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, world.ID, world.SegmentText, world.Name, world.Description,
+		INSERT INTO worlds (id, segment_text, original_summary, name, description, genre, difficulty, goals, npcs, plot_lines, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, world.ID, world.SegmentText, world.OriginalSummary, world.Name, world.Description,
 		world.Genre, world.Difficulty, goalsJSON, npcsJSON, plotLinesJSON, world.CreatedAt)
 
 	return err
@@ -243,9 +244,9 @@ func (s *Storage) GetWorld(id string) (*models.World, error) {
 	var goalsJSON, npcsJSON, plotLinesJSON string
 
 	err := s.db.QueryRow(`
-		SELECT id, segment_text, name, description, genre, difficulty, goals, npcs, plot_lines, created_at
+		SELECT id, segment_text, original_summary, name, description, genre, difficulty, goals, npcs, plot_lines, created_at
 		FROM worlds WHERE id = ?
-	`, id).Scan(&world.ID, &world.SegmentText, &world.Name, &world.Description,
+	`, id).Scan(&world.ID, &world.SegmentText, &world.OriginalSummary, &world.Name, &world.Description,
 		&world.Genre, &world.Difficulty, &goalsJSON, &npcsJSON, &plotLinesJSON, &world.CreatedAt)
 
 	if err != nil {

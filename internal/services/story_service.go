@@ -121,10 +121,22 @@ func (ss *StoryService) ProcessAction(ctx context.Context, storyID string, actio
 		return nil, fmt.Errorf("故事已结束")
 	}
 
+	// 获取世界信息
+	world, err := ss.storage.GetWorld(story.WorldID)
+	if err != nil {
+		return nil, fmt.Errorf("获取世界失败: %w", err)
+	}
+
 	// 获取场景
 	scene, err := ss.storage.GetScene(story.SceneID)
 	if err != nil {
 		return nil, fmt.Errorf("获取场景失败: %w", err)
+	}
+
+	// 获取角色信息
+	character, err := ss.storage.GetCharacter(story.CharacterID)
+	if err != nil {
+		return nil, fmt.Errorf("获取角色失败: %w", err)
 	}
 
 	// 获取角色状态
@@ -161,7 +173,7 @@ func (ss *StoryService) ProcessAction(ctx context.Context, storyID string, actio
 	log.Println()
 
 	// 生成叙事
-	narrative, err := ss.llm.NarrateResult(ctx, scene, action, diceRoll)
+	narrative, err := ss.llm.NarrateResult(ctx, world, character, scene, action, diceRoll)
 	if err != nil {
 		narrative = fmt.Sprintf("你尝试了%s，结果%s", action.Content,
 			map[bool]string{true: "成功", false: "失败"}[diceRoll.Success])
@@ -243,7 +255,7 @@ func (ss *StoryService) ProcessAction(ctx context.Context, storyID string, actio
 	// 生成下一步选项
 	var nextOptions []models.Option
 	if !sceneEnd {
-		nextOptions, err = ss.llm.GenerateOptions(ctx, scene, narrative, charState)
+		nextOptions, err = ss.llm.GenerateOptions(ctx, world, scene, narrative, charState)
 		if err != nil {
 			// 如果生成失败，提供默认选项
 			nextOptions = ss.getDefaultOptions()
