@@ -27,6 +27,7 @@ project-abyss
 # Environment
 .env
 config.local.yml
+config.yml
 
 # OS
 .DS_Store
