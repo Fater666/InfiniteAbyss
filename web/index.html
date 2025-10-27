@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Abyss - AI无限流跑团</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1>⚔️💋 无限深渊 Infinite Abyss</h1>
+            <p class="subtitle">AI驱动的18+文字冒险游戏 | 战斗·探索·后宫 | 18+ Only</p>
+            <div style="margin-top: 10px;">
+                <button class="btn" onclick="UI.showAPISettings()" style="background: #9c27b0;">⚙️ API设置</button>
+                <button class="btn" onclick="UI.undoLastTurn()" style="background: #ff9800;">⏪ 回退</button>
+                <button class="btn" onclick="UI.saveCurrentGame()" style="background: #4caf50;">💾 存档</button>
+                <button class="btn" onclick="UI.showLoadMenu()" style="background: #2196f3;">📂 读档</button>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 左侧：角色卡 -->
+            <aside class="character-panel">
+                <div id="character-card" class="card">
+                    <h2>角色信息</h2>
+                    <div id="character-info">
+                        <button id="create-character-btn" class="btn btn-primary">创建角色</button>
+                        <button id="load-character-btn" class="btn"
+                            style="background: #2196f3; margin-top: 10px;">加载角色</button>
+                    </div>
+                </div>
+
+                <div id="character-state" class="card" style="display: none;">
+                    <h3>当前状态</h3>
+                    <div class="stats">
+                        <div class="stat-bar">
+                            <label>HP</label>
+                            <div class="bar">
+                                <div id="hp-bar" class="bar-fill hp"></div>
+                            </div>
+                            <span id="hp-text">100/100</span>
+                        </div>
+                        <div class="stat-bar">
+                            <label>理智</label>
+                            <div class="bar">
+                                <div id="san-bar" class="bar-fill san"></div>
+                            </div>
+                            <span id="san-text">100/100</span>
+                        </div>
+                    </div>
+                    <div class="attributes" id="attributes"></div>
+                </div>
+            </aside>
+
+            <!-- 中间：故事内容 -->
+            <main class="story-panel">
+                <!-- 世界输入 -->
+                <div id="segment-input-section" class="card" style="display: none;">
+                    <h2>📖 输入小说段落 - 无限流玩法</h2>
+                    <p class="hint">粘贴小说片段，AI会基于其设定创建世界，你将作为新人进入这个世界！</p>
+                    <textarea id="segment-text"
+                        placeholder="任意题材小说都可以！例如：&#10;&#10;【校园】圣光学院是全国顶尖学府。学生会长叶梓萱是公认的校花，而副会长林浩是她的青梅竹马...&#10;&#10;【修仙】你穿越到修仙世界，遇到了剑宗大师兄张云飞和他的师妹白素贞。据说他们正在寻找灵药...&#10;&#10;【都市】你搬到新小区，隔壁住着美女瑜伽教练和楼上的健身教练大哥，小区气氛很不错..."
+                        rows="8"></textarea>
+                    <button id="parse-segment-btn" class="btn btn-primary">进入世界</button>
+                </div>
+
+                <!-- 世界信息 -->
+                <div id="world-info" class="card" style="display: none;">
+                    <h2 id="world-name"></h2>
+                    <p id="world-description"></p>
+                    <div class="world-meta">
+                        <span class="badge" id="world-genre"></span>
+                        <span class="badge" id="world-difficulty"></span>
+                    </div>
+                    <div id="world-goals"></div>
+                    <button id="start-adventure-btn" class="btn btn-success">开始冒险</button>
+                </div>
+
+                <!-- 故事日志 -->
+                <div id="narrative-log" class="card" style="display: none;">
+                    <h2>冒险日志</h2>
+                    <div id="log-content"></div>
+                </div>
+
+                <!-- 行动选项 -->
+                <div id="action-options" class="card" style="display: none;">
+                    <h3>你要做什么？</h3>
+                    <div id="options-list"></div>
+                    <div class="custom-action">
+                        <input type="text" id="custom-action-input" placeholder="或者输入自定义行动...">
+                        <button id="custom-action-btn" class="btn btn-secondary">执行</button>
+                    </div>
+                </div>
+            </main>
+
+            <!-- 右侧：世界信息 -->
+            <aside class="world-panel">
+                <div class="card">
+                    <h2>世界档案</h2>
+                    <div id="npc-list"></div>
+                </div>
+
+                <div class="card">
+                    <h3>目标</h3>
+                    <ul id="goals-list"></ul>
+                </div>
+
+                <div class="card">
+                    <h3>道具</h3>
+                    <ul id="inventory-list"></ul>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- 模态框：创建角色 -->
+    <div id="create-character-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+            <h2>创建新角色</h2>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: bold;">创建方式：</label>
+                <select id="creation-mode" style="width: 100%; padding: 8px; margin-top: 5px;">
+                    <option value="ai">AI自动生成（推荐）</option>
+                    <option value="manual">手动创建</option>
+                </select>
+            </div>
+
+            <!-- 基础信息 -->
+            <div style="margin-bottom: 10px;">
+                <label style="font-weight: bold;">姓名：</label>
+                <input type="text" id="character-name" placeholder="角色名字"
+                    style="width: 100%; padding: 8px; margin-top: 5px;" />
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <label style="font-weight: bold;">性别：</label>
+                <select id="character-gender" style="width: 100%; padding: 8px; margin-top: 5px;">
+                    <option value="male">男</option>
+                    <option value="female">女</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: bold;">年龄：</label>
+                <input type="number" id="character-age" value="20" min="16" max="60"
+                    style="width: 100%; padding: 8px; margin-top: 5px;" />
+            </div>
+
+            <!-- AI生成部分 -->
+            <div id="ai-mode-section">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: bold;">额外设定（可选）：</label>
+                    <textarea id="character-prompt" placeholder="例如：我想要一个运动员背景、擅长格斗的角色..." rows="3"
+                        style="width: 100%; padding: 8px; margin-top: 5px;"></textarea>
+                    <p style="font-size: 0.9em; color: #888; margin-top: 5px;">AI会根据上述信息自动生成外貌、性格、背景故事和属性</p>
+                </div>
+            </div>
+
+            <!-- 手动创建部分 -->
+            <div id="manual-mode-section" style="display: none;">
+                <div style="margin-bottom: 10px;">
+                    <label style="font-weight: bold;">外貌描述：</label>
+                    <textarea id="character-appearance" placeholder="描述角色的外貌、身材、穿着..." rows="3"
+                        style="width: 100%; padding: 8px; margin-top: 5px;"></textarea>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <label style="font-weight: bold;">性格特点：</label>
+                    <textarea id="character-personality" placeholder="描述角色的性格..." rows="2"
+                        style="width: 100%; padding: 8px; margin-top: 5px;"></textarea>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: bold;">背景故事：</label>
+                    <textarea id="character-background" placeholder="描述角色的过往经历..." rows="3"
+                        style="width: 100%; padding: 8px; margin-top: 5px;"></textarea>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: bold;">基础属性（总点数建议50-60）：</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                        <div>力量：<input type="number" id="attr-strength" value="10" min="1" max="20"
+                                style="width: 60px; padding: 5px;" /></div>
+                        <div>敏捷：<input type="number" id="attr-dexterity" value="10" min="1" max="20"
+                                style="width: 60px; padding: 5px;" /></div>
+                        <div>智力：<input type="number" id="attr-intelligence" value="10" min="1" max="20"
+                                style="width: 60px; padding: 5px;" /></div>
+                        <div>魅力：<input type="number" id="attr-charisma" value="10" min="1" max="20"
+                                style="width: 60px; padding: 5px;" /></div>
+                        <div>感知：<input type="number" id="attr-perception" value="10" min="1" max="20"
+                                style="width: 60px; padding: 5px;" /></div>
+                        <div style="grid-column: span 2;"><strong>总计：<span id="attr-total">50</span></strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="confirm-create-character" class="btn btn-primary">创建角色</button>
+                <button id="cancel-create-character" class="btn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框：加载角色 -->
+    <div id="load-character-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+            <h2>加载已保存的角色</h2>
+
+            <div id="characters-list" style="margin-top: 20px;">
+                <!-- 角色列表将在这里动态生成 -->
+            </div>
+
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button id="cancel-load-character" class="btn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框：API设置 -->
+    <div id="api-settings-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2>⚙️ API设置</h2>
+
+            <div
+                style="margin-bottom: 20px; padding: 10px; background: #fff3cd; border-radius: 5px; border-left: 4px solid #ffc107;">
+                <p style="margin: 0; font-size: 0.9em; color: #856404;">
+                    <strong>提示：</strong>在这里配置的API设置将优先使用。如果不配置，将使用服务器的config.yml配置。
+                </p>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                    AI服务提供商：
+                </label>
+                <select id="api-provider" style="width: 100%; padding: 10px; font-size: 1em;">
+                    <option value="grok">xAI Grok-3 (推荐，支持成人内容)</option>
+                    <option value="openai" disabled>OpenAI GPT (暂不支持成人内容)</option>
+                    <option value="custom">自定义OpenAI兼容接口</option>
+                </select>
+            </div>
+
+            <div id="grok-settings">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                        API Base URL：
+                    </label>
+                    <input type="text" id="api-base-url" placeholder="https://api.x.ai/v1" value="https://api.x.ai/v1"
+                        style="width: 100%; padding: 10px; font-size: 1em; box-sizing: border-box;" />
+                    <p style="font-size: 0.85em; color: #666; margin-top: 5px;">
+                        Grok默认地址：https://api.x.ai/v1
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                        API Key：
+                    </label>
+                    <input type="password" id="api-key" placeholder="xai-xxxxxxxxxxxxxxxxxxxxx"
+                        style="width: 100%; padding: 10px; font-size: 1em; box-sizing: border-box;" />
+                    <p style="font-size: 0.85em; color: #666; margin-top: 5px;">
+                        获取密钥：<a href="https://x.ai/" target="_blank" style="color: #2196f3;">访问xAI官网</a>
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                        模型：
+                    </label>
+                    <input type="text" id="api-model" placeholder="grok-3" value="grok-3"
+                        style="width: 100%; padding: 10px; font-size: 1em; box-sizing: border-box;" />
+                </div>
+            </div>
+
+            <div
+                style="margin-bottom: 20px; padding: 10px; background: #f8d7da; border-radius: 5px; border-left: 4px solid #dc3545;">
+                <p style="margin: 0; font-size: 0.9em; color: #721c24;">
+                    <strong>安全提示：</strong>API密钥仅保存在您的浏览器本地存储中，不会上传到服务器。
+                </p>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="show-api-key" style="margin-right: 8px;">
+                    <span>显示API密钥</span>
+                </label>
+            </div>
+
+            <div class="modal-actions">
+                <button id="save-api-settings" class="btn btn-primary">💾 保存设置</button>
+                <button id="test-api-connection" class="btn" style="background: #2196f3;">🔌 测试连接</button>
+                <button id="clear-api-settings" class="btn" style="background: #f44336;">🗑️ 清除设置</button>
+                <button id="cancel-api-settings" class="btn">取消</button>
+            </div>
+
+            <div id="api-test-result" style="margin-top: 15px; padding: 10px; border-radius: 5px; display: none;"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

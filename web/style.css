@@ -1,0 +1,469 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #e4e4e4;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* 头部 */
+.header {
+    text-align: center;
+    padding: 30px 0;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 30px;
+}
+
+.header h1 {
+    font-size: 3em;
+    color: #ff6b6b;
+    text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    color: #a8a8a8;
+    font-size: 1.1em;
+}
+
+/* 主内容布局 */
+.main-content {
+    display: grid;
+    grid-template-columns: 300px 1fr 300px;
+    gap: 20px;
+}
+
+/* 卡片通用样式 */
+.card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.card h2 {
+    color: #ff6b6b;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.card h3 {
+    color: #ffd93d;
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+/* 按钮 */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #e4e4e4;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #6dd5ed 0%, #2193b0 100%);
+    color: white;
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(109, 213, 237, 0.4);
+}
+
+/* 角色面板 */
+.character-panel {
+    position: sticky;
+    top: 20px;
+    height: fit-content;
+}
+
+#character-info {
+    text-align: center;
+}
+
+.stats {
+    margin-top: 15px;
+}
+
+.stat-bar {
+    margin-bottom: 15px;
+}
+
+.stat-bar label {
+    display: block;
+    margin-bottom: 5px;
+    color: #ffd93d;
+    font-weight: bold;
+}
+
+.bar {
+    background: rgba(0, 0, 0, 0.3);
+    height: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.bar-fill {
+    height: 100%;
+    transition: width 0.5s;
+}
+
+.bar-fill.hp {
+    background: linear-gradient(90deg, #ff6b6b, #ee5a6f);
+}
+
+.bar-fill.san {
+    background: linear-gradient(90deg, #4ecdc4, #44a08d);
+}
+
+.attributes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.attribute {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.attribute-name {
+    font-size: 0.9em;
+    color: #a8a8a8;
+}
+
+.attribute-value {
+    font-size: 1.4em;
+    font-weight: bold;
+    color: #ffd93d;
+}
+
+/* 故事面板 */
+.story-panel {
+    min-height: 600px;
+}
+
+#segment-text {
+    width: 100%;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #e4e4e4;
+    font-size: 1em;
+    font-family: inherit;
+    resize: vertical;
+    margin-bottom: 15px;
+}
+
+.hint {
+    color: #a8a8a8;
+    margin-bottom: 15px;
+    font-style: italic;
+}
+
+.world-meta {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+#world-goals {
+    margin: 15px 0;
+}
+
+.goal-item {
+    background: rgba(255, 215, 0, 0.1);
+    padding: 10px;
+    border-left: 3px solid #ffd93d;
+    margin-bottom: 8px;
+    border-radius: 4px;
+}
+
+/* 日志 */
+#log-content {
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.log-entry {
+    padding: 15px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.log-entry.action {
+    background: rgba(102, 126, 234, 0.2);
+    border-left: 4px solid #667eea;
+}
+
+.log-entry.result {
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 4px solid #4ecdc4;
+}
+
+.log-entry.system {
+    background: rgba(255, 215, 0, 0.1);
+    border-left: 4px solid #ffd93d;
+}
+
+.dice-roll {
+    display: inline-block;
+    background: rgba(255, 107, 107, 0.2);
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin: 5px 0;
+    font-family: monospace;
+}
+
+.dice-roll.success {
+    background: rgba(78, 205, 196, 0.2);
+}
+
+.dice-roll.critical {
+    background: rgba(255, 215, 0, 0.3);
+    font-weight: bold;
+}
+
+/* 选项 */
+#options-list {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.option-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.3s;
+}
+
+.option-btn:hover {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: #667eea;
+    transform: translateX(5px);
+}
+
+.option-label {
+    font-weight: bold;
+    color: #ffd93d;
+    font-size: 1.1em;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.option-description {
+    color: #a8a8a8;
+    font-size: 0.9em;
+}
+
+.option-meta {
+    margin-top: 8px;
+    font-size: 0.85em;
+}
+
+.risk-low { color: #4ecdc4; }
+.risk-medium { color: #ffd93d; }
+.risk-high { color: #ff6b6b; }
+
+.custom-action {
+    display: flex;
+    gap: 10px;
+}
+
+#custom-action-input {
+    flex: 1;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #e4e4e4;
+    font-size: 1em;
+}
+
+/* 世界面板 */
+.world-panel {
+    position: sticky;
+    top: 20px;
+    height: fit-content;
+}
+
+.npc-item {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.npc-name {
+    font-weight: bold;
+    color: #ff6b6b;
+    margin-bottom: 5px;
+}
+
+.npc-role {
+    font-size: 0.85em;
+    color: #a8a8a8;
+}
+
+#goals-list, #inventory-list {
+    list-style: none;
+    padding: 0;
+}
+
+#goals-list li, #inventory-list li {
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    margin-bottom: 8px;
+    border-radius: 6px;
+    border-left: 3px solid #4ecdc4;
+}
+
+/* 模态框 */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: #1a1a2e;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+}
+
+.modal-content h2 {
+    color: #ff6b6b;
+    margin-bottom: 20px;
+}
+
+.modal-content input {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #e4e4e4;
+    font-size: 1em;
+    margin-bottom: 20px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+/* 响应式 */
+@media (max-width: 1200px) {
+    .main-content {
+        grid-template-columns: 250px 1fr 250px;
+    }
+}
+
+@media (max-width: 992px) {
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .character-panel, .world-panel {
+        position: static;
+    }
+}
+

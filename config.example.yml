@@ -1,0 +1,21 @@
+server:
+  port: 8080
+  host: "0.0.0.0"
+
+database:
+  path: "./data/abyss.db"
+
+llm:
+  provider: "openai"  # openai, azure, custom
+  api_key: "your-openai-api-key-here"
+  api_base: "https://api.openai.com/v1"
+  model: "gpt-4"
+  temperature: 0.7
+  max_tokens: 2000
+
+game:
+  default_hp: 100
+  default_san: 100
+  max_turn_per_scene: 20
+  enable_adult_mode: false
+
