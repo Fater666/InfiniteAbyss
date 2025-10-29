@@ -173,7 +173,7 @@ func (ss *StoryService) ProcessAction(ctx context.Context, storyID string, actio
 	log.Println()
 
 	// 生成叙事
-	narrative, err := ss.llm.NarrateResult(ctx, world, character, scene, action, diceRoll)
+	narrative, err := ss.llm.NarrateResult(ctx, world, character, scene, action, diceRoll, story.Narrative)
 	if err != nil {
 		narrative = fmt.Sprintf("你尝试了%s，结果%s", action.Content,
 			map[bool]string{true: "成功", false: "失败"}[diceRoll.Success])
@@ -255,7 +255,7 @@ func (ss *StoryService) ProcessAction(ctx context.Context, storyID string, actio
 	// 生成下一步选项
 	var nextOptions []models.Option
 	if !sceneEnd {
-		nextOptions, err = ss.llm.GenerateOptions(ctx, world, scene, narrative, charState)
+		nextOptions, err = ss.llm.GenerateOptions(ctx, world, scene, narrative, story.Narrative, charState)
 		if err != nil {
 			// 如果生成失败，提供默认选项
 			nextOptions = ss.getDefaultOptions()
