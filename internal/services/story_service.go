@@ -336,12 +336,43 @@ func (ss *StoryService) checkSceneEnd(_ *models.Scene, story *models.StoryState,
 		return true
 	}
 
-	// 回合数超限
-	if story.Turn >= 20 {
+	// 100回合强制失败
+	if story.Turn >= 100 {
+		log.Println("⏰ [超时] 已达到100回合限制，场景强制结束")
 		return true
 	}
 
-	// 其他场景特定的结束条件可以在这里添加
+	// 评估剧情进度判断是否完成
+	world, err := ss.storage.GetWorld(story.WorldID)
+	if err == nil && len(world.PlotLines) > 0 {
+		// 找到当前节点
+		var currentNode *models.PlotNode
+		var currentNodeIndex int
+		for i, node := range world.PlotLines {
+			if node.ID == story.CurrentPlotNodeID {
+				currentNode = &world.PlotLines[i]
+				currentNodeIndex = i
+				break
+			}
+		}
+
+		if currentNode != nil {
+			// 检查是否在最后一个节点且进度达到100%
+			if currentNodeIndex == len(world.PlotLines)-1 && story.PlotProgress >= 1.0 {
+				log.Println("✅ [完成] 已到达最终剧情节点并完成所有进度")
+				return true
+			}
+
+			// 每5回合检查一次进度
+			if story.Turn > 0 && story.Turn%5 == 0 {
+				// 如果进度太低（低于0.2），提醒玩家
+				if story.PlotProgress < 0.2 {
+					log.Printf("⚠️ [进度提醒] 当前回合: %d, 进度: %.1f%%，请尽快推进剧情\n",
+						story.Turn, story.PlotProgress*100)
+				}
+			}
+		}
+	}
 
 	return false
 }
@@ -504,11 +535,19 @@ func (ss *StoryService) evaluatePlotProgress(ctx context.Context, story *models.
 
 	// 找到下一个节点
 	var nextNode *models.PlotNode
+	isLastNode := false
 	if currentNodeIndex < len(world.PlotLines)-1 {
 		nextNode = &world.PlotLines[currentNodeIndex+1]
 	} else {
-		// 已经是最后一个节点，不再评估
-		return nil
+		// 已经是最后一个节点，创建一个虚拟的"完成"节点用于评估
+		nextNode = &models.PlotNode{
+			ID:          "completion",
+			Name:        "场景完成",
+			Description: "当前场景的所有主要剧情已经完成，场景可以结束了。",
+			Location:    currentNode.Location,
+			IsPlayable:  true,
+		}
+		isLastNode = true
 	}
 
 	// 调用LLM评估剧情推进
@@ -519,25 +558,41 @@ func (ss *StoryService) evaluatePlotProgress(ctx context.Context, story *models.
 
 	story.PlotProgress = newProgress
 
+	// 追加一条系统消息显示当前进度与目标
+	progressMsg := fmt.Sprintf("剧情进度：%.0f%% / 100%%（当前：%s → 目标：%s）", story.PlotProgress*100, currentNode.Name, nextNode.Name)
+	story.Narrative = append(story.Narrative, models.NarrativeLog{
+		Turn:      story.Turn,
+		Type:      "system",
+		Content:   progressMsg,
+		Timestamp: time.Now(),
+	})
+
 	// 如果到达下一个节点
 	if reached {
 		log.Printf("🎯 [剧情推进] 玩家从「%s」推进到「%s」\n", currentNode.Name, nextNode.Name)
 
-		// 更新当前节点
-		story.CurrentPlotNodeID = nextNode.ID
-		story.PlotProgress = 0.0 // 重置推进度
+		// 如果是最后一个节点，不切换节点ID，保持当前节点并标记完成
+		if isLastNode {
+			log.Println("🎯 [完成] 已到达最终节点并完成所有进度，场景准备结束")
+			// 将进度设为1.0以确保场景结束
+			story.PlotProgress = 1.0
+		} else {
+			// 更新当前节点
+			story.CurrentPlotNodeID = nextNode.ID
+			story.PlotProgress = 0.0 // 重置推进度
 
-		// 添加剧情节点到达的系统消息
-		story.Narrative = append(story.Narrative, models.NarrativeLog{
-			Turn:      story.Turn,
-			Type:      "system",
-			Content:   fmt.Sprintf("\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎯 【剧情推进】%s\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n%s", nextNode.Name, nextNode.Description),
-			Timestamp: time.Now(),
-		})
+			// 添加剧情节点到达的系统消息
+			story.Narrative = append(story.Narrative, models.NarrativeLog{
+				Turn:      story.Turn,
+				Type:      "system",
+				Content:   fmt.Sprintf("\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎯 【剧情推进】%s\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n%s", nextNode.Name, nextNode.Description),
+				Timestamp: time.Now(),
+			})
 
-		// 如果是最后一个节点，标记故事即将结束
-		if currentNodeIndex+1 >= len(world.PlotLines)-1 {
-			log.Println("📖 [剧情] 已到达最终剧情节点")
+			// 如果到达了新的最后一个节点，标记故事即将结束
+			if currentNodeIndex+1 >= len(world.PlotLines)-1 {
+				log.Println("📖 [剧情] 已到达最终剧情节点")
+			}
 		}
 	}
 
